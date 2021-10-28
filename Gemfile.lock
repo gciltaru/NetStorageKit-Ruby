@@ -1,0 +1,27 @@
+PATH
+  remote: .
+  specs:
+    netstorageapi (0.8.2)
+      typhoeus
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ethon (0.15.0)
+      ffi (>= 1.15.0)
+    ffi (1.15.4)
+    power_assert (2.0.1)
+    test-unit (3.5.0)
+      power_assert
+    typhoeus (1.4.0)
+      ethon (>= 0.9.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  netstorageapi!
+  test-unit
+
+BUNDLED WITH
+   2.1.4

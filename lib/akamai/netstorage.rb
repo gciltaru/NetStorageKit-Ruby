@@ -22,7 +22,7 @@ require "cgi"
 require "net/http"
 require "openssl" 
 require "uri"
-
+require "typhoeus"
 
 module Akamai
     class NetstorageError < Exception
@@ -58,36 +58,29 @@ module Akamai
                 elsif File.directory?(local_destination)
                     local_destination = File.join(local_destination, File.basename(kwargs[:path]))
                 end
-                
-                response = Net::HTTP.start(uri.hostname, uri.port, 
-                  :use_ssl => uri.scheme == 'https') { |http| 
-                    http.request @request do |res|
-                        begin
-                            open(local_destination, "wb") do |io|
-                                res.read_body do |chunk|
-                                    io.write chunk
-                                end
-                            end
-                        rescue Exception => e
-                            raise NetstorageError, e
-                        end
-                    end
-                }
+
+                response = begin
+                              @request.on_body do |chunk|
+                                  open(local_destination, "wb") do |io|
+                                      io.write chunk
+                                  end
+                              end
+                              @request.run
+                           rescue Exception => e
+                               raise NetstorageError, e
+                           end
                 return response
             end
 
             if kwargs[:action].start_with?("upload")
                 begin
-                    @request.body = File.read(kwargs[:source])
+                    @request.options[:body] = File.read(kwargs[:source])
                 rescue Exception => e
                     raise NetstorageError, e
                 end 
             end 
             
-            response = Net::HTTP.start(uri.hostname, uri.port, 
-              :use_ssl => uri.scheme == 'https') { |http| 
-                    http.request(@request) 
-            }
+            response = @request.run
 
             return response
         end
@@ -117,16 +110,28 @@ module Akamai
             }
 
             if kwargs[:method] == "GET"
-                @request = Net::HTTP::Get.new(uri, initheader=headers)
-            elsif kwargs[:method] == "POST" 
-                @request = Net::HTTP::Post.new(uri, initheader=headers)
+                @request = Typhoeus::Request.new(
+                  uri.to_s,
+                  method: :get,
+                  headers: headers
+                )
+            elsif kwargs[:method] == "POST"
+                @request = Typhoeus::Request.new(
+                  uri.to_s,
+                  method: :post,
+                  headers: headers
+                )
             elsif kwargs[:method] == "PUT" # Use only upload
-                @request = Net::HTTP::Put.new(uri, initheader=headers)
+                @request = Typhoeus::Request.new(
+                  uri.to_s,
+                  method: :put,
+                  headers: headers
+                )
             end
 
             response = _response(uri, kwargs)
             
-            return response.code == "200", response
+            return response.code == 200, response
         end
 
         public

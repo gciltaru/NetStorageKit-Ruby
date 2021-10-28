@@ -10,4 +10,6 @@ Gem::Specification.new do |s|
   s.homepage    = 'https://github.com/akamai/NetstorageKit-Ruby'
   s.license     = 'Apache'
   s.required_ruby_version = '>= 2.0'
+
+  s.add_dependency 'typhoeus'
 end
